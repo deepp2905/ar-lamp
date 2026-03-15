@@ -1,0 +1,114 @@
+.lamp-container {
+  width: 400px;
+  height: 293px;
+  padding-top: 40px;
+  padding-bottom: 32px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  display: inline-flex;
+  z-index: 3;
+}
+
+.lamp-glow-outer {
+  width: 280px;
+  height: 280px;
+  left: 60px;
+  top: 10.5px;
+  position: absolute;
+  opacity: 0.15;
+  background: var(--lamp-color);
+  border-radius: 9999px;
+  filter: blur(40px);
+}
+
+.lamp-glow-inner {
+  width: 180px;
+  height: 180px;
+  left: 110px;
+  top: 60.5px;
+  position: absolute;
+  opacity: 0.30;
+  background: var(--lamp-color);
+  border-radius: 9999px;
+  filter: blur(20px);
+}
+
+.lamp-bulb {
+  width: 128px;
+  height: 128px;
+  position: relative;
+  background: var(--lamp-color);
+  border-radius: 9999px;
+}
+
+.lamp-bulb-highlight {
+  width: 40px;
+  height: 40px;
+  right: 20px;
+  bottom: 20px;
+  position: absolute;
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: 20px;
+  filter: blur(5px);
+}
+
+.lamp-base {
+  width: 52px;
+  height: 17px;
+  position: relative;
+}
+
+.lamp-base-inner {
+  left: 0;
+  top: -4px;
+  position: absolute;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  display: inline-flex;
+}
+
+.lamp-base-top {
+  width: 48px;
+  height: 8px;
+  background: linear-gradient(180deg, #A09B96 0%, #78736E 100%);
+  border-top-left-radius: 3px;
+  border-top-right-radius: 3px;
+}
+
+.lamp-base-segments {
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  display: flex;
+}
+
+.lamp-base-seg-1 {
+  width: 52px;
+  height: 3px;
+  background: #827D78;
+}
+
+.lamp-base-seg-2 {
+  width: 50px;
+  height: 3px;
+  background: #736E69;
+}
+
+.lamp-base-seg-3 {
+  width: 48px;
+  height: 3px;
+  background: #645F5A;
+}
+
+.lamp-base-bottom {
+  width: 40px;
+  height: 4px;
+  background: #5A5550;
+  border-bottom-right-radius: 3px;
+  border-bottom-left-radius: 3px;
+}

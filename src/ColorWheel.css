@@ -1,0 +1,183 @@
+/* ─── Google Font ──────────────────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@300;400&display=swap');
+
+/* ─── Shared spring curve ───────────────────────────────────────────────────
+   Used for outer ring expand/contract (width + height transitions)
+   550ms, cubic-bezier(0.34, 1.4, 0.64, 1) — ~8% overshoot spring
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* Root wrapper — centers the widget, sets the font */
+.cw-root {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  font-family: 'Roboto Mono', monospace;
+  padding: 40px 20px;
+  user-select: none;
+}
+
+/* Fixed-size hit area that contains all positioned children */
+.cw-stage {
+  position: relative;
+  width: 400px;
+  height: 400px;
+  flex-shrink: 0;
+}
+
+/* ─── Color wheel ring ──────────────────────────────────────────────────────
+   Width/height are set inline (reactive); transitions handle the animation.
+   ─────────────────────────────────────────────────────────────────────────── */
+.cw-ring {
+  position: absolute;
+  border-radius: 50%;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  background: conic-gradient(
+    from 0deg,
+    #ff0000, #ff8000, #ffff00, #aaff00,
+    #00ff00, #00ffcc, #00ffff, #0088ff,
+    #0000ff, #8800ff, #ff00ff, #ff0066,
+    #ff0000
+  );
+  mix-blend-mode: hard-light;
+  cursor: crosshair;
+
+  /* Spring expand/contract — 550ms, cubic-bezier with ~8% overshoot */
+  transition:
+    width  550ms cubic-bezier(0.34, 1.4, 0.64, 1),
+    height 550ms cubic-bezier(0.34, 1.4, 0.64, 1),
+    opacity    500ms ease,
+    box-shadow 500ms ease;
+}
+
+.cw-ring--off {
+  opacity: 0.15;
+  box-shadow: 0 5px 10px 5px rgba(0, 0, 0, 0.25);
+}
+
+.cw-ring--on {
+  opacity: 0.75;
+  box-shadow: 0 0 10px 5px rgba(255, 255, 255, 0.25);
+}
+
+/* ─── Inner dark circle ─────────────────────────────────────────────────────
+   Always 250×250. Slightly more opaque when off for contrast.
+   ─────────────────────────────────────────────────────────────────────────── */
+.cw-inner {
+  position: absolute;
+  border-radius: 50%;
+  width: 250px;
+  height: 250px;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  background: #000;
+  opacity: 0.5;
+  z-index: 1;
+  cursor: pointer;
+  transition: opacity 500ms ease;
+}
+
+.cw-inner--on {
+  opacity: 0.4;
+}
+
+/* ─── Center content layer ──────────────────────────────────────────────────
+   Sits above the inner circle, hosts both off/on content simultaneously
+   (each fades independently so there's no layout jump).
+   ─────────────────────────────────────────────────────────────────────────── */
+.cw-center {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+  width: 250px;
+  height: 250px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  user-select: none; 
+  pointer-events: none;
+}
+
+/* Off content: power icon + "POWER OFF" label */
+.cw-off-content {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  opacity: 1;
+  transition: opacity 300ms ease, scale 300ms ease;
+}
+
+.cw-off-content--hidden {
+  opacity: 0;
+  scale: 0.8;
+}
+
+.cw-label-off {
+  font-size: 18px;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  color: #fff;
+}
+
+/* On content: "100%" + "BRIGHTNESS" label */
+.cw-on-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  opacity: 0;
+  scale: 1.25;
+
+  /* 350ms ease, 150ms delay — waits for power icon to nearly finish fading */
+  transition: opacity 350ms ease, scale 350ms ease;
+}
+
+.cw-on-content--visible {
+  opacity: 1;
+  scale: 1;
+}
+
+.cw-brightness-value {
+  font-size: 54px;
+  font-weight: 300;
+  line-height: 1;
+  letter-spacing: -0.04 em;
+  color: #fff;
+}
+
+.cw-brightness-label {
+  font-size: 18px;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  margin-top: 6px;
+  opacity: 0.9;
+  color: #fff;
+}
+
+/* ─── Draggable knob ────────────────────────────────────────────────────────
+   Position (left/top) and opacity are set inline (animated via JS RAF).
+   ─────────────────────────────────────────────────────────────────────────── */
+.cw-knob {
+  position: absolute;
+  width: 71px;
+  height: 71px;
+  border-radius: 50%;
+  border: 8px solid #fff;
+  background: rgba(0, 0, 0, 0.5);
+  mix-blend-mode: soft-light;
+  box-sizing: border-box;
+  z-index: 3;
+  cursor: grab;
+}
+
+.cw-knob:active {
+  cursor: grabbing;
+}

@@ -1,0 +1,74 @@
+  /* Reset margins and prevent scrolling */
+  body, html {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background-color: #000;
+    font-family: sans-serif;
+  }
+
+  .app-container {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+  }
+
+  /* Layer 1: The Webcam Feed */
+  .webcam-video {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* Ensures the video fills the screen without stretching */
+    z-index: 1;
+    transform: scaleX(-1); /* Mirrors the video so it acts like a mirror */
+  }
+
+  /* Layer 2: The Color Wheel UI */
+  .ui-layer {
+    position: absolute;
+    top: 30px;
+    right: 30px;
+    z-index: 3; /* Above the video */
+    
+    /* Scale it down slightly if it feels too large over the video */
+    transform: scale(0.75);
+    transform-origin: top left;
+  }
+
+  /* Layer 3: The Resting State Overlay */
+  .resting-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.95); /* Dim the video slightly */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+    color: white;
+    text-align: center;
+    opacity: 1;
+    transition: opacity 350ms ease;
+  }
+
+  .resting-overlay--hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.landmark-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+  transform: scaleX(-1);
+}
