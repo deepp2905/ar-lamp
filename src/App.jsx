@@ -10,7 +10,7 @@ function App() {
   const canvasRef = useRef(null)
   const bulbRef = useRef(null)
   const [handAngle, setHandAngle] = useState(null)
-
+  const [isFist, setIsFist] = useState(false)
 
   const [lampColor, setLampColor] = useState('#FF0000')
   const [isWheelOn, setIsWheelOn] = useState(false)
@@ -59,13 +59,11 @@ function App() {
           return tipDist < baseDist * 1.1  // tip is not further than base = curled
         })
 
-        if (bulbRef.current) {
-          bulbRef.current.className = `lamp-bulb${isFist ? ' lamp-bulb--off' : ''}`
-        }
+        setIsFist(isFist)
 
         // ── Color wheel angle: rotation of wrist → middle finger base ──
         const middleBase = landmarks[9]
-        const adx = middleBase.x - wrist.x
+        const adx = -(middleBase.x - wrist.x)
         const ady = middleBase.y - wrist.y
         const angleDeg = ((Math.atan2(ady, adx) * 180 / Math.PI) + 360) % 360
         setHandAngle(Math.round(angleDeg))
@@ -82,9 +80,7 @@ function App() {
       } else {
         setIsHandDetected(false)
         setHandAngle(null)
-        if (bulbRef.current) {
-          bulbRef.current.className = 'lamp-bulb'
-        }
+        setIsFist(false)
       }
     })
 
@@ -139,11 +135,11 @@ function App() {
       
       <canvas ref={canvasRef} className="landmark-canvas" />
 
-      <Lamp color={lampColor} isOn={isWheelOn} />
+      <Lamp color={lampColor} isOn={isWheelOn && !isFist} />
 
       <div className="ui-layer">
         <ColorWheel
-          autoOn={isHandDetected}
+          autoOn={isHandDetected  && !isFist}
           externalAngle={handAngle}
           onPowerChange={(on) => setIsWheelOn(on)}
           onAngleChange={(degrees) => setLampColor(`hsl(${Math.round(degrees)}, 100%, 60%)`)}

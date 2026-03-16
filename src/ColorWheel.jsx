@@ -84,26 +84,14 @@ export default function ColorWheel({ onPowerChange, onAngleChange, autoOn, exter
   }, []);
 
   // ── Ring click: slide knob to target angle via shortest arc ────────────
-  const slideKnobTo = useCallback(target => {
-    stopAnim();
-    setKnobOpacity(1);
-    const from = ((angleRef.current % 360) + 360) % 360;
-    const norm = ((target % 360) + 360) % 360;
-    let diff   = norm - from;
-    if (diff >  180) diff -= 360;
-    if (diff < -180) diff += 360;
-
-    const t0 = performance.now();
-    const tick = now => {
-      const t = Math.min((now - t0) / SLIDE_DUR, 1);
-      const v = from + diff * easeInOutCubic(t);
-      angleRef.current = v;
-      _setDispAngle(v);
-      onAngleChange?.(((v % 360) + 360) % 360);
-      if (t < 1) rafRef.current = requestAnimationFrame(tick);
-    };
-    rafRef.current = requestAnimationFrame(tick);
-  }, [stopAnim, onAngleChange]);
+const slideKnobTo = useCallback(target => {
+  stopAnim();
+  setKnobOpacity(1);
+  const norm = ((target % 360) + 360) % 360;
+  angleRef.current = norm;
+  _setDispAngle(norm);
+  onAngleChange?.(norm);
+}, [stopAnim, onAngleChange]);
 
   // ── Power on ─────────────────────────────────────────────────────────────
   const turnOn = useCallback(() => {
