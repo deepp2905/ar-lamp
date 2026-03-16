@@ -1,16 +1,65 @@
-# React + Vite
+# Hand-Controlled RGB Lamp
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Control a virtual RGB lamp using your hand in front of a webcam. 
 
-Currently, two official plugins are available:
+## What it does
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **Open hand** → turns the lamp on
+- **Closed fist** → turns the lamp off
+- **Rotate wrist** → spins the color wheel knob, changing the lamp color in real time
+- Hand landmarks are drawn on screen so you can see what the tracker is reading
 
-## React Compiler
+## Tech
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- React + Vite
+- MediaPipe Hands (via CDN) for hand tracking
+- Custom `ColorWheel` component with drag/click/gesture control
+- CSS variable-driven `Lamp` component
 
-## Expanding the ESLint configuration
+## Run locally
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+```bash
+npm install
+npm run dev
+```
+
+Then open `http://localhost:5173` and allow camera access when prompted.
+
+## Dependencies
+
+No extra installs needed for MediaPipe — it loads from CDN. Make sure `index.html` has these scripts in `<head>`:
+
+```html
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+```
+
+## How to use
+
+1. Open the app — you'll see a dark overlay saying "Waiting for hand movement"
+2. Hold your **open hand** in front of the camera — the overlay fades, the color wheel powers on
+3. **Rotate your wrist** clockwise/counterclockwise to cycle through colors
+4. **Close your fist** to turn the lamp off
+5. **Open your hand** again to turn it back on — color picks up from where you left it
+6. You can also interact with the color wheel manually — click the ring to snap the knob, or drag it directly
+
+## File structure
+
+```
+src/
+├── App.jsx          # Main app, webcam + MediaPipe logic
+├── App.css          # Layout, layers, overlay
+├── ColorWheel.jsx   # Interactive color wheel component
+├── ColorWheel.css   # Color wheel styles
+├── Lamp.jsx         # Lamp bulb + glow component
+└── Lamp.css         # Lamp styles + on/off states
+public/
+└── power.svg        # Power icon used in color wheel
+```
+
+## Notes
+
+- Works best with good lighting and a plain background
+- Fist detection checks if all four fingertips are closer to the wrist than their respective knuckles
+- Hand rotation is relative — the knob starts from its current position when your hand enters the frame
