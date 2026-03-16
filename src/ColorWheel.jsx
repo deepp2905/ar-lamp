@@ -26,7 +26,9 @@ const easeInOutCubic = t =>
  *   onPowerChange(isOn: boolean)     — fired when power state toggles
  *   onAngleChange(degrees: number)   — fired whenever the knob angle changes
  */
-export default function ColorWheel({ onPowerChange, onAngleChange, autoOn }) {
+
+
+export default function ColorWheel({ onPowerChange, onAngleChange, autoOn, externalAngle }) {
   const [isOn, setIsOn]           = useState(false);
   const [dispAngle, _setDispAngle] = useState(0);
   const [knobOpacity, setKnobOpacity] = useState(0);
@@ -84,6 +86,7 @@ export default function ColorWheel({ onPowerChange, onAngleChange, autoOn }) {
   // ── Ring click: slide knob to target angle via shortest arc ────────────
   const slideKnobTo = useCallback(target => {
     stopAnim();
+    setKnobOpacity(1);
     const from = ((angleRef.current % 360) + 360) % 360;
     const norm = ((target % 360) + 360) % 360;
     let diff   = norm - from;
@@ -180,6 +183,11 @@ export default function ColorWheel({ onPowerChange, onAngleChange, autoOn }) {
     if (autoOn && !isOn) turnOn()
     // if (!autoOn && isOn) turnOff() // turns off the lamp if hands are not visible
   }, [autoOn])
+
+  useEffect(() => {
+  if (externalAngle == null) return
+  slideKnobTo(externalAngle)
+}, [externalAngle])  // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Derived knob position ────────────────────────────────────────────────
   const rad   = (dispAngle - 90) * Math.PI / 180;

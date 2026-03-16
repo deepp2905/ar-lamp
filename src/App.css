@@ -58,9 +58,13 @@
     transition: opacity 350ms ease;
   }
 
-  .resting-overlay--hidden {
+.resting-overlay h2 {
+  transition: opacity 350ms ease;
+}
+
+.resting-text--hidden {
   opacity: 0;
-  pointer-events: none;
+  transition: opacity 350ms ease;
 }
 
 .landmark-canvas {
