@@ -35,7 +35,7 @@
     z-index: 3; /* Above the video */
     
     /* Scale it down slightly if it feels too large over the video */
-    transform: scale(0.75);
+    transform: scale(1);
     transform-origin: top left;
   }
 

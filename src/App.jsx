@@ -10,7 +10,7 @@ function App() {
   const canvasRef = useRef(null)
 
 
-  const [lampColor, setLampColor] = useState('#FFE4CE')
+  const [lampColor, setLampColor] = useState('#FF0000')
   const [isWheelOn, setIsWheelOn] = useState(false)
 
   useEffect(() => {
@@ -122,7 +122,7 @@ function App() {
         <ColorWheel
         autoOn={isHandDetected}
         onPowerChange={(on) => setIsWheelOn(on)}
-        onAngleChange={(degrees) => setLampColor(`hsl(${Math.round(degrees)}, 100%, 85%)`)}
+        onAngleChange={(degrees) => setLampColor(`hsl(${Math.round(degrees)}, 100%, 65%)`)}
         />
       </div>
 
