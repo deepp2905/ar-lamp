@@ -9,6 +9,10 @@ function App() {
   const colorWheelRef = useRef(null)
   const canvasRef = useRef(null)
 
+
+  const [lampColor, setLampColor] = useState('#FFE4CE')
+  const [isWheelOn, setIsWheelOn] = useState(false)
+
   useEffect(() => {
     const hands = new window.Hands({
       locateFile: file => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
@@ -112,14 +116,17 @@ function App() {
       
       <canvas ref={canvasRef} className="landmark-canvas" />
 
-      <Lamp/>
+      <Lamp color={lampColor} isOn={isWheelOn} />
 
       <div className="ui-layer">
         <ColorWheel
-          ref={colorWheelRef}
-          autoOn={isHandDetected}
+        autoOn={isHandDetected}
+        onPowerChange={(on) => setIsWheelOn(on)}
+        onAngleChange={(degrees) => setLampColor(`hsl(${Math.round(degrees)}, 100%, 85%)`)}
         />
       </div>
+
+      
 
       <div className={`resting-overlay ${isHandDetected ? 'resting-overlay--hidden' : ''}`}>
         <h2>Waiting for hand movement...</h2>
