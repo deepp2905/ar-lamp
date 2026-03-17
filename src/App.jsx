@@ -28,14 +28,7 @@ function App() {
       minTrackingConfidence: 0.5,
     })
 
-    // hands.onResults(results => {
-    //   console.log(results)
-    //   if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-    //     setIsHandDetected(true)
-    //   } else {
-    //     setIsHandDetected(false)
-    //   }
-    // })
+
 
     hands.onResults(results => {
       const canvas = canvasRef.current
