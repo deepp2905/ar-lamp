@@ -151,7 +151,7 @@ function App() {
 
       <div className="resting-overlay">
         <h2 className={isHandDetected ? 'resting-text--hidden' : ''}>
-          Rotate palm to change color · Open/close palm to toggle on/off
+          Rotate palm to change color · Close palm to turn off 
         </h2>
       </div>      
 
