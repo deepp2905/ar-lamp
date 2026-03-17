@@ -16,14 +16,15 @@ function App() {
   const [isWheelOn, setIsWheelOn] = useState(false)
 
   useEffect(() => {
+    if (window.innerWidth < 1000) return
     const hands = new window.Hands({
       locateFile: file => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
     })
 
     hands.setOptions({
       maxNumHands: 1,
-      modelComplexity: 0,       // 0 = fastest, 1 = more accurate
-      minDetectionConfidence: 0.7,
+      modelComplexity: 1,       // 0 = fastest, 1 = more accurate
+      minDetectionConfidence: 0.5,
       minTrackingConfidence: 0.5,
     })
 
@@ -122,6 +123,15 @@ function App() {
       }
     }
   }, [])
+
+
+  if (window.innerWidth < 1000) {
+    return (
+      <div className="mobile-block">
+        <p>This experience only works on desktop for now.</p>
+      </div>
+    )
+  }
 
   return (
     <div className="app-container">

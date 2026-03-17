@@ -76,3 +76,17 @@
   z-index: 2;
   transform: scaleX(-1);
 }
+
+.mobile-block {
+  width: 100vw;
+  height: 100vh;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 18px;
+  text-align: center;
+  padding: 20px;
+  box-sizing: border-box;
+}
