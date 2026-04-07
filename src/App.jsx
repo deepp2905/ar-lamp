@@ -64,7 +64,7 @@ function App() {
         const middleBase = landmarks[9]
         const adx        = -(middleBase.x - wrist.x)
         const ady        =   middleBase.y  - wrist.y
-        const angleDeg   = ((Math.atan2(ady, adx) * 180 / Math.PI) + 360) % 180
+        const angleDeg   = ((Math.atan2(ady, adx) * 180 / Math.PI) + 360) % 360
 
         // ── Relative rotation ───────────────────────────────────────────────
         if (baseHandAngleRef.current === null) {
@@ -72,12 +72,12 @@ function App() {
           baseKnobAngleRef.current = currentKnobAngleRef.current
         }
 
-        const delta      = (angleDeg - baseHandAngleRef.current) * 1
+        const delta      = (angleDeg - baseHandAngleRef.current) * 2
         const targetKnob = ((baseKnobAngleRef.current + delta) % 360 + 360) % 360
 
         // ── Smoothing ───────────────────────────────────────────────────────
         if (smoothAngleRef.current === null) smoothAngleRef.current = targetKnob
-        smoothAngleRef.current = lerp(smoothAngleRef.current, targetKnob, 0.5)
+        smoothAngleRef.current = lerp(smoothAngleRef.current, targetKnob, 0.025)
         setHandAngle(Math.round(smoothAngleRef.current))
 
         // ── Draw landmarks ──────────────────────────────────────────────────
@@ -86,7 +86,7 @@ function App() {
             color: 'rgba(255,255,255,1)', lineWidth: 2
           })
           window.drawLandmarks(ctx, lm, {
-            color: '#fff', fillColor: '#ffffff', lineWidth: 1, radius: 6
+            color: '#fff', fillColor: '#ffffff', lineWidth: 1, radius: 4
           })
         }
 
