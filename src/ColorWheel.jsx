@@ -10,7 +10,7 @@ const KNOB      = 71;    // draggable knob diameter
 const ORBIT     = (OUTER_ON / 2 + INNER / 2) / 2; // knob orbit radius
 
 // ─── Animation constants ─────────────────────────────────────────────────────
-const SPIN_DUR  = 1400;  // knob entrance full-360 spin (ms)
+const SPIN_DUR  = 800;  // knob entrance full-360 spin (ms)
 const SLIDE_DUR = 520;   // ring-click knob slide-to-position (ms)
 
 // ease-in-out cubic — used for both spin and slide
