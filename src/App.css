@@ -24,6 +24,7 @@
     height: 100%;
     object-fit: cover; /* Ensures the video fills the screen without stretching */
     z-index: 1;
+    filter: grayscale();
     transform: scaleX(-1); /* Mirrors the video so it acts like a mirror */
   }
 

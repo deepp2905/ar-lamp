@@ -3,7 +3,10 @@ import ColorWheel from './ColorWheel'
 import Lamp from './Lamp'
 import './App.css'
 
-const lerp = (a, b, t) => a + (b - a) * t
+const lerpAngle = (current, target, t) => {
+  const diff = ((target - current + 540) % 360) - 180   // shortest arc, -180..+180
+  return (current + diff * t + 360) % 360
+}
 
 function App() {
   const videoRef  = useRef(null)
@@ -15,9 +18,8 @@ function App() {
   const [lampColor, setLampColor]           = useState('#FF0000')
   const [isWheelOn, setIsWheelOn]           = useState(false)
 
-  // Relative rotation refs
-  const baseHandAngleRef    = useRef(null)
-  const baseKnobAngleRef    = useRef(null)
+  // Rotation tracking refs
+  const prevHandAngleRef    = useRef(null)   // hand angle from last frame
   const currentKnobAngleRef = useRef(0)
   const smoothAngleRef      = useRef(null)
 
@@ -60,33 +62,36 @@ function App() {
         })
         setIsFist(detectedFist)
 
-        // ── Wrist rotation angle ────────────────────────────────────────────
-        const middleBase = landmarks[9]
-        const adx        = -(middleBase.x - wrist.x)
-        const ady        =   middleBase.y  - wrist.y
+        // ── Index finger pointing angle ─────────────────────────────────────
+        const indexBase  = landmarks[5]
+        const indexTip   = landmarks[8]
+        const adx        = -(indexTip.x - indexBase.x)
+        const ady        =   indexTip.y  - indexBase.y
         const angleDeg   = ((Math.atan2(ady, adx) * 180 / Math.PI) + 360) % 360
 
-        // ── Relative rotation ───────────────────────────────────────────────
-        if (baseHandAngleRef.current === null) {
-          baseHandAngleRef.current = angleDeg
-          baseKnobAngleRef.current = currentKnobAngleRef.current
+        // ── Incremental rotation (frame-by-frame delta) ─────────────────────
+        if (prevHandAngleRef.current === null) {
+          prevHandAngleRef.current = angleDeg
         }
 
-        const delta      = (angleDeg - baseHandAngleRef.current) * 2
-        const targetKnob = ((baseKnobAngleRef.current + delta) % 360 + 360) % 360
+        const frameDelta = ((angleDeg - prevHandAngleRef.current + 540) % 360) - 180
+        prevHandAngleRef.current = angleDeg
+
+        const newKnob = ((currentKnobAngleRef.current + frameDelta * 2) % 360 + 360) % 360
+        currentKnobAngleRef.current = newKnob
 
         // ── Smoothing ───────────────────────────────────────────────────────
-        if (smoothAngleRef.current === null) smoothAngleRef.current = targetKnob
-        smoothAngleRef.current = lerp(smoothAngleRef.current, targetKnob, 0.025)
+        if (smoothAngleRef.current === null) smoothAngleRef.current = newKnob
+        smoothAngleRef.current = lerpAngle(smoothAngleRef.current, newKnob, 0.75)
         setHandAngle(Math.round(smoothAngleRef.current))
 
         // ── Draw landmarks ──────────────────────────────────────────────────
         for (const lm of results.multiHandLandmarks) {
           window.drawConnectors(ctx, lm, window.HAND_CONNECTIONS, {
-            color: 'rgba(255,255,255,1)', lineWidth: 2
+            color: 'rgba(255,255,255,1)', lineWidth: 0
           })
           window.drawLandmarks(ctx, lm, {
-            color: '#fff', fillColor: '#ffffff', lineWidth: 1, radius: 4
+            color: '#fc7e2b', fillColor: '#fc7e2b', lineWidth: 0, radius: 5
           })
         }
 
@@ -94,8 +99,7 @@ function App() {
         setIsHandDetected(false)
         setHandAngle(null)
         setIsFist(false)
-        baseHandAngleRef.current = null
-        baseKnobAngleRef.current = null
+        prevHandAngleRef.current = null
         smoothAngleRef.current   = null
       }
     })
