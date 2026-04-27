@@ -97,6 +97,11 @@ function App() {
   const angleFilterRef       = useRef(new CircularOneEuro(ANGLE_MIN_CUTOFF, ANGLE_BETA))
   const prevSmoothedAngleRef = useRef(null)
 
+  // MediaPipe occasionally drops a frame even when the hand is still visible.
+  // Tolerate a short streak of misses before flipping the UI to "not detected".
+  const missStreakRef = useRef(0)
+  const MISS_FRAMES_TO_LOSE = 8
+
   // Knob state — target = where the hand/user wants the knob,
   // displayed = what's currently painted. RAF interpolates one toward the other.
   const targetKnobAngleRef    = useRef(0)
@@ -152,6 +157,7 @@ function App() {
       ctx.clearRect(0, 0, canvas.width, canvas.height)
 
       if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+        missStreakRef.current = 0
         setIsHandDetected(true)
 
         const landmarks = results.multiHandLandmarks[0]
@@ -205,10 +211,16 @@ function App() {
         }
 
       } else {
-        setIsHandDetected(false)
-        setIsFist(false)
-        angleFilterRef.current.reset()
-        prevSmoothedAngleRef.current = null
+        // Brief misses are common — only treat as "lost" after a streak.
+        // Until then, keep the smoothing state intact so the angle picks up
+        // exactly where it left off when MediaPipe re-acquires.
+        missStreakRef.current += 1
+        if (missStreakRef.current >= MISS_FRAMES_TO_LOSE) {
+          setIsHandDetected(false)
+          setIsFist(false)
+          angleFilterRef.current.reset()
+          prevSmoothedAngleRef.current = null
+        }
       }
     })
 
