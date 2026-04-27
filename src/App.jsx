@@ -3,10 +3,62 @@ import ColorWheel from './ColorWheel'
 import Lamp from './Lamp'
 import './App.css'
 
+// One Euro Filter — adaptive low-pass: heavy smoothing at rest, light on
+// fast motion. minCutoff = base smoothing (Hz), beta = how much fast motion
+// raises the cutoff. The standard reference for jittery gesture input.
+class OneEuroFilter {
+  constructor(minCutoff, beta, dCutoff = 1.0) {
+    this.minCutoff = minCutoff
+    this.beta      = beta
+    this.dCutoff   = dCutoff
+    this.xPrev = null; this.dxPrev = 0; this.tPrev = null
+  }
+  static alpha(cutoff, dt) {
+    const tau = 1 / (2 * Math.PI * cutoff)
+    return 1 / (1 + tau / dt)
+  }
+  filter(x, t) {
+    if (this.tPrev === null) { this.tPrev = t; this.xPrev = x; return x }
+    const dt = (t - this.tPrev) / 1000
+    if (dt <= 0) return this.xPrev
+    const dx    = (x - this.xPrev) / dt
+    const aD    = OneEuroFilter.alpha(this.dCutoff, dt)
+    const dxHat = aD * dx + (1 - aD) * this.dxPrev
+    const cut   = this.minCutoff + this.beta * Math.abs(dxHat)
+    const a     = OneEuroFilter.alpha(cut, dt)
+    const xHat  = a * x + (1 - a) * this.xPrev
+    this.xPrev = xHat; this.dxPrev = dxHat; this.tPrev = t
+    return xHat
+  }
+  reset() { this.xPrev = null; this.dxPrev = 0; this.tPrev = null }
+}
+
+// Filter sin/cos separately so the 360°→0° wrap doesn't blow up the filter.
+class CircularOneEuro {
+  constructor(minCutoff, beta) {
+    this.s = new OneEuroFilter(minCutoff, beta)
+    this.c = new OneEuroFilter(minCutoff, beta)
+  }
+  filter(deg, t) {
+    const r  = deg * Math.PI / 180
+    const sx = this.s.filter(Math.sin(r), t)
+    const cx = this.c.filter(Math.cos(r), t)
+    return ((Math.atan2(sx, cx) * 180 / Math.PI) + 360) % 360
+  }
+  reset() { this.s.reset(); this.c.reset() }
+}
+
+const ANGLE_MIN_CUTOFF = 0.8   // Hz — lower = smoother but laggier at rest
+const ANGLE_BETA       = 0.2  // higher = snappier when hand moves quickly
+const DEADZONE_DEG     = 0.1   // ignore frame deltas below this (kills resting twitch)
+const DISPLAY_RATE     = 20    // 1/sec rate constant for RAF display lerp
+
 const lerpAngle = (current, target, t) => {
-  const diff = ((target - current + 540) % 360) - 180   // shortest arc, -180..+180
+  const diff = ((target - current + 540) % 360) - 180
   return (current + diff * t + 360) % 360
 }
+
+const shortestDelta = (from, to) => ((to - from + 540) % 360) - 180
 
 function App() {
   const videoRef  = useRef(null)
@@ -15,13 +67,44 @@ function App() {
   const [isHandDetected, setIsHandDetected] = useState(false)
   const [isFist, setIsFist]                 = useState(false)
   const [handAngle, setHandAngle]           = useState(null)
-  const [lampColor, setLampColor]           = useState('#FF0000')
+  const [lampColor, setLampColor]           = useState('hsl(0, 100%, 60%)')
   const [isWheelOn, setIsWheelOn]           = useState(false)
 
-  // Rotation tracking refs
-  const prevHandAngleRef    = useRef(null)   // hand angle from last frame
-  const currentKnobAngleRef = useRef(0)
-  const smoothAngleRef      = useRef(null)
+  // Smoothing applied to the raw wrist angle from MediaPipe
+  const angleFilterRef       = useRef(new CircularOneEuro(ANGLE_MIN_CUTOFF, ANGLE_BETA))
+  const prevSmoothedAngleRef = useRef(null)
+
+  // Knob state — target = where the hand/user wants the knob,
+  // displayed = what's currently painted. RAF interpolates one toward the other.
+  const targetKnobAngleRef    = useRef(0)
+  const displayedKnobAngleRef = useRef(0)
+
+  // Independent RAF loop — drives the knob at 60fps regardless of MediaPipe's
+  // (variable, slower) callback rate. This is the single biggest visual win.
+  useEffect(() => {
+    let rafId = null
+    let lastT = null
+
+    const tick = now => {
+      const dt = Math.min((now - (lastT ?? now)) / 1000, 0.1)
+      lastT = now
+
+      const display = displayedKnobAngleRef.current
+      const target  = targetKnobAngleRef.current
+      const t       = 1 - Math.exp(-DISPLAY_RATE * dt)
+      const next    = lerpAngle(display, target, t)
+
+      if (Math.abs(shortestDelta(display, next)) > 0.05) {
+        displayedKnobAngleRef.current = next
+        setHandAngle(next)
+        setLampColor(`hsl(${Math.round(next)}, 100%, 60%)`)
+      }
+
+      rafId = requestAnimationFrame(tick)
+    }
+    rafId = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(rafId)
+  }, [])
 
   useEffect(() => {
     if (window.innerWidth < 1000) return
@@ -51,7 +134,6 @@ function App() {
         const landmarks = results.multiHandLandmarks[0]
         const wrist     = landmarks[0]
 
-        // ── Fist detection ──────────────────────────────────────────────────
         const fingerTips  = [landmarks[8], landmarks[12], landmarks[16], landmarks[20]]
         const fingerBases = [landmarks[5], landmarks[9],  landmarks[13], landmarks[17]]
         const detectedFist = fingerTips.every((tip, i) => {
@@ -62,30 +144,34 @@ function App() {
         })
         setIsFist(detectedFist)
 
-        // ── Index finger pointing angle ─────────────────────────────────────
-        const indexBase  = landmarks[5]
-        const indexTip   = landmarks[8]
-        const adx        = -(indexTip.x - indexBase.x)
-        const ady        =   indexTip.y  - indexBase.y
-        const angleDeg   = ((Math.atan2(ady, adx) * 180 / Math.PI) + 360) % 360
+        // Fist pauses input. Reset filter + baseline so the next open-palm
+        // frame establishes a fresh starting point with no jump on release.
+        if (detectedFist) {
+          angleFilterRef.current.reset()
+          prevSmoothedAngleRef.current = null
+        } else {
+          // Wrist → middle MCP is longer and more rigid than the index-finger
+          // vector, so the same MediaPipe pixel-jitter produces less angle noise.
+          const middleMcp = landmarks[9]
+          const adx       = -(middleMcp.x - wrist.x)
+          const ady       =   middleMcp.y - wrist.y
+          const rawAngle  = ((Math.atan2(ady, adx) * 180 / Math.PI) + 360) % 360
 
-        // ── Incremental rotation (frame-by-frame delta) ─────────────────────
-        if (prevHandAngleRef.current === null) {
-          prevHandAngleRef.current = angleDeg
+          const smoothed = angleFilterRef.current.filter(rawAngle, performance.now())
+
+          if (prevSmoothedAngleRef.current === null) {
+            prevSmoothedAngleRef.current = smoothed
+          }
+
+          let frameDelta = shortestDelta(prevSmoothedAngleRef.current, smoothed)
+          prevSmoothedAngleRef.current = smoothed
+
+          if (Math.abs(frameDelta) < DEADZONE_DEG) frameDelta = 0
+
+          targetKnobAngleRef.current =
+            ((targetKnobAngleRef.current + frameDelta) % 360 + 360) % 360
         }
 
-        const frameDelta = ((angleDeg - prevHandAngleRef.current + 540) % 360) - 180
-        prevHandAngleRef.current = angleDeg
-
-        const newKnob = ((currentKnobAngleRef.current + frameDelta * 2) % 360 + 360) % 360
-        currentKnobAngleRef.current = newKnob
-
-        // ── Smoothing ───────────────────────────────────────────────────────
-        if (smoothAngleRef.current === null) smoothAngleRef.current = newKnob
-        smoothAngleRef.current = lerpAngle(smoothAngleRef.current, newKnob, 0.75)
-        setHandAngle(Math.round(smoothAngleRef.current))
-
-        // ── Draw landmarks ──────────────────────────────────────────────────
         for (const lm of results.multiHandLandmarks) {
           window.drawConnectors(ctx, lm, window.HAND_CONNECTIONS, {
             color: 'rgba(255,255,255,1)', lineWidth: 0
@@ -97,10 +183,9 @@ function App() {
 
       } else {
         setIsHandDetected(false)
-        setHandAngle(null)
         setIsFist(false)
-        prevHandAngleRef.current = null
-        smoothAngleRef.current   = null
+        angleFilterRef.current.reset()
+        prevSmoothedAngleRef.current = null
       }
     })
 
@@ -167,7 +252,11 @@ function App() {
           externalAngle={handAngle}
           onPowerChange={on => setIsWheelOn(on)}
           onAngleChange={degrees => {
-            currentKnobAngleRef.current = degrees
+            // Fired by user drag / ring-click only (the hand path skips this
+            // callback). Sync target+display so the next hand frame starts
+            // from where they put the knob.
+            targetKnobAngleRef.current    = degrees
+            displayedKnobAngleRef.current = degrees
             setLampColor(`hsl(${Math.round(degrees)}, 100%, 60%)`)
           }}
         />

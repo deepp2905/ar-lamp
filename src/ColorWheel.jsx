@@ -84,14 +84,16 @@ export default function ColorWheel({ onPowerChange, onAngleChange, autoOn, exter
   }, []);
 
   // ── Ring click: slide knob to target angle via shortest arc ────────────
-const slideKnobTo = useCallback(target => {
-  stopAnim();
-  setKnobOpacity(1);
-  const norm = ((target % 360) + 360) % 360;
-  angleRef.current = norm;
-  _setDispAngle(norm);
-  onAngleChange?.(norm);
-}, [stopAnim, onAngleChange]);
+  // fireCallback=false on the externalAngle (hand-driven) path so the
+  // writeback doesn't collapse the parent's target→display lerp.
+  const slideKnobTo = useCallback((target, fireCallback = true) => {
+    stopAnim();
+    setKnobOpacity(1);
+    const norm = ((target % 360) + 360) % 360;
+    angleRef.current = norm;
+    _setDispAngle(norm);
+    if (fireCallback) onAngleChange?.(norm);
+  }, [stopAnim, onAngleChange]);
 
   // ── Power on ─────────────────────────────────────────────────────────────
   const turnOn = useCallback(() => {
@@ -173,9 +175,9 @@ const slideKnobTo = useCallback(target => {
   }, [autoOn])
 
   useEffect(() => {
-  if (externalAngle == null) return
-  slideKnobTo(externalAngle)
-}, [externalAngle])  // eslint-disable-line react-hooks/exhaustive-deps
+    if (externalAngle == null) return
+    slideKnobTo(externalAngle, false)
+  }, [externalAngle])  // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Derived knob position ────────────────────────────────────────────────
   const rad   = (dispAngle - 90) * Math.PI / 180;
