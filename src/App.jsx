@@ -3,6 +3,29 @@ import ColorWheel from './ColorWheel'
 import Lamp from './Lamp'
 import './App.css'
 
+const RotateIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 12a9 9 0 1 1-3-6.7L21 8" />
+    <polyline points="21 3 21 8 16 8" />
+  </svg>
+)
+const PalmIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="7"  y1="13" x2="7"  y2="7" />
+    <line x1="11" y1="13" x2="11" y2="4" />
+    <line x1="15" y1="13" x2="15" y2="4" />
+    <line x1="19" y1="13" x2="19" y2="7" />
+    <path d="M5 13c0 4 2.5 7 8 7s8-3 8-7" />
+  </svg>
+)
+const FistIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="6" />
+    <line x1="9" y1="10" x2="15" y2="10" />
+    <line x1="9" y1="13" x2="15" y2="13" />
+  </svg>
+)
+
 // One Euro Filter — adaptive low-pass: heavy smoothing at rest, light on
 // fast motion. minCutoff = base smoothing (Hz), beta = how much fast motion
 // raises the cutoff. The standard reference for jittery gesture input.
@@ -174,10 +197,10 @@ function App() {
 
         for (const lm of results.multiHandLandmarks) {
           window.drawConnectors(ctx, lm, window.HAND_CONNECTIONS, {
-            color: 'rgba(255,255,255,1)', lineWidth: 0
+            color: 'rgba(255,255,255,0.25)', lineWidth: 1.5
           })
           window.drawLandmarks(ctx, lm, {
-            color: '#fc7e2b', fillColor: '#fc7e2b', lineWidth: 0, radius: 5
+            color: '#ffffff', fillColor: '#ffffff', lineWidth: 0, radius: 5
           })
         }
 
@@ -231,6 +254,8 @@ function App() {
     )
   }
 
+  const lampOn = isWheelOn && !isFist
+
   return (
     <div className="app-container">
 
@@ -244,31 +269,38 @@ function App() {
 
       <canvas ref={canvasRef} className="landmark-canvas" />
 
-      <Lamp color={lampColor} isOn={isWheelOn && !isFist} />
+      {/* Scene tint — the lamp light spilling onto the room */}
+      <div
+        className={`scene-tint ${lampOn ? 'scene-tint--on' : ''}`}
+        style={{ '--scene-color': lampColor }}
+      />
 
-      <div className="ui-layer">
+      <Lamp color={lampColor} isOn={lampOn} />
+
+      {/* Instruction pills — crossfade between waiting state and active state */}
+      <div className="instruction-bar">
+        <div className={`pill pill--solo ${isHandDetected ? 'pill--hidden' : ''}`}>
+          <span>Waiting for hand movement</span>
+        </div>
+        <div className={`pill-group ${!isHandDetected ? 'pill-group--hidden' : ''}`}>
+          <div className="pill"><RotateIcon /><span>Rotate wrist</span></div>
+          <div className="pill"><PalmIcon   /><span>Open palm to turn on</span></div>
+          <div className="pill"><FistIcon   /><span>Close fist to turn off</span></div>
+        </div>
+      </div>
+
+      {/* Color wheel — controller anchored at the bottom */}
+      <div className="controller">
         <ColorWheel
           autoOn={isHandDetected && !isFist}
           externalAngle={handAngle}
           onPowerChange={on => setIsWheelOn(on)}
           onAngleChange={degrees => {
-            // Fired by user drag / ring-click only (the hand path skips this
-            // callback). Sync target+display so the next hand frame starts
-            // from where they put the knob.
             targetKnobAngleRef.current    = degrees
             displayedKnobAngleRef.current = degrees
             setLampColor(`hsl(${Math.round(degrees)}, 100%, 60%)`)
           }}
         />
-      </div>
-
-      <div className="resting-overlay">
-        <h2 className={`resting-msg ${isHandDetected ? 'resting-msg--hidden' : ''}`}>
-          Waiting for hand movement...
-        </h2>
-        <h2 className={`resting-msg ${!isHandDetected ? 'resting-msg--hidden' : ''}`}>
-          Rotate wrist to change color · Open palm to turn on · Close fist to turn off
-        </h2>
       </div>
 
     </div>
